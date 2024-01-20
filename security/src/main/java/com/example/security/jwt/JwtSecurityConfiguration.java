@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -33,25 +34,35 @@ import java.util.UUID;
 public class JwtSecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // 모든 HTTP 요청에 대한 권한을 설정
         http.authorizeHttpRequests(
                 auth -> {
                     auth.anyRequest().authenticated();
                 });
+
+        // 세션 관리 설정: 상태가 없는 REST API에서 csrf 토큰, 세션 사용 안 함 설정
         http.sessionManagement(
                 session ->
                         session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS // 상태가 없는 REST API에서 csrf토큰, 세션사용안함 설정!
+                                SessionCreationPolicy.STATELESS
                         )
         );
 
-//        http.formLogin();
+        // 기본적인 HTTP 기본 인증(Basic Authentication)을 사용
         http.httpBasic();
+
+        // CSRF(Cross-Site Request Forgery) 비활성화
         http.csrf().disable();
+
+        // X-Frame-Options 헤더 설정
         http.headers().frameOptions().sameOrigin();
-// oauth server setting
+
+        // OAuth 서버 설정: JWT를 사용하는 OAuth2 리소스 서버 설정
         http.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt); // 이후 디코더 설정
+        http.oauth2Login(Customizer.withDefaults());
         return http.build();
     }
+
 
     //=============================================================
     @Bean
